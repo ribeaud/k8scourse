@@ -3,22 +3,13 @@ kind: Pod
 metadata:
   name: k8stime
 spec:
+  nodeName: xam-kube-17-2
   containers:
     - name: webserver
       image: httpd:latest
       volumeMounts:
         - name: htdocs
           mountPath: /usr/local/apache2/htdocs
-    - name: clock
-      image: alpine:latest
-      command:
-        - /bin/sh
-        - -c
-      args:
-        - while true; do date > /mnt/date.txt; sleep 1; done
-      volumeMounts:
-        - name: htdocs
-          mountPath: /mnt
     - name: client
       image: alpine:latest
       command:
@@ -28,4 +19,5 @@ spec:
         - while true; do wget -O - -q http://localhost/date.txt; sleep 1; done
   volumes:
     - name: htdocs
-      emptyDir: {}
+      persistentVolumeClaim:
+        claimName: pvc

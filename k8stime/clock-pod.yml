@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clock
+spec:
+  nodeName: xam-kube-17-2
+  containers:
+    - name: clock
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do date > /mnt/date.txt; sleep 1; done
+      volumeMounts:
+        - name: date
+          mountPath: /mnt
+  volumes:
+    - name: date
+      persistentVolumeClaim:
+        claimName: pvc
