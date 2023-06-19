@@ -1,0 +1,15 @@
+Welcome to the training "Kubernetes: Hands-On Training Container Orchestration"!
+
+The password for all systems in your lab environment is:
+
+  8nqtzy,iKQHAh7v.
+
+The following virtual machines are available for you:
+
+  xam-kube-17-1   116.202.29.154     2a01:4f8:c012:776e::1 
+  xam-kube-17-2   168.119.186.159    2a01:4f8:c012:ac7f::1 
+  xam-kube-17-3   142.132.186.101    2a01:4f8:c012:ca2::1 
+
+You can login to the VMs via SSH using the root account.
+
+For any other questions, please consult your trainer.
