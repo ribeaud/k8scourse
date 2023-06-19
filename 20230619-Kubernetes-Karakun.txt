@@ -1,0 +1,443 @@
+# Kubernetes: Hands-On Training Container Orchestration
+Fabian Thorns <fabian.thorns@xamira.de>
+
+June 19th to June 21st, 2023 -- Karakun AG
+
+
+## Backlog
+
+* If we have some time: Cluster setup
+* Local development environments (Minikube? Karakun Dev Environments)
+
+* how to manage self-made images regarding security update (Erik)
+
+## Resources
+
+
+### Zoom Meeting
+
+https://karakun.zoom.us/j/83256256497?from=addon
+Meeting ID: 832 5625 6497
+Passcode: 105901
+
+
+### Handout
+
+https://nextcloud.xamira.de/s/kLaBqfFJD33Zkcm
+
+
+### VMs
+
+xam-kube-01-1   49.13.29.53       2a01:4f8:c010:9ead::1 Fabian
+xam-kube-01-2   49.12.242.155     2a01:4f8:c012:c4c3::1 Fabian
+xam-kube-01-3   49.13.28.227      2a01:4f8:c012:f435::1 Fabian
+
+xam-kube-03-1   49.13.48.66       2a01:4f8:c17:5fd3::1  Amit
+xam-kube-03-2   168.119.157.218   2a01:4f8:c012:77de::1 Amit
+xam-kube-03-3   167.235.232.19    2a01:4f8:c012:10bd::1 Amit
+
+xam-kube-04-1   167.235.248.117   2a01:4f8:1c17:60c1::1 Fabio
+xam-kube-04-2   128.140.48.128    2a01:4f8:c012:d08f::1 Fabio
+xam-kube-04-3   49.13.6.106       2a01:4f8:c010:9bf6::1 Fabio
+
+xam-kube-05-1   49.13.27.49       2a01:4f8:c012:d6d::1  Janak
+xam-kube-05-2   138.201.119.176   2a01:4f8:c012:def::1  Janak
+xam-kube-05-3   128.140.49.107    2a01:4f8:c17:620f::1  Janak
+
+xam-kube-06-1   142.132.227.117   2a01:4f8:c010:9580::1 Jatin
+xam-kube-06-2   159.69.51.99      2a01:4f8:c17:e0d9::1  Jatin
+xam-kube-06-3   167.235.225.156   2a01:4f8:c012:ce3::1  Jatin
+
+xam-kube-07-1   5.75.251.147      2a01:4f8:c012:a0b0::1 Marcel
+xam-kube-07-2   167.235.255.199   2a01:4f8:c012:c4e::1  Marcel
+xam-kube-07-3   167.235.194.232   2a01:4f8:c012:6ef::1  Marcel
+
+xam-kube-08-1   116.202.13.16     2a01:4f8:c012:539b::1 Michael
+xam-kube-08-2   167.235.192.6     2a01:4f8:c010:8551::1 Michael
+xam-kube-08-3   167.235.252.54    2a01:4f8:c012:5a72::1 Michael
+
+xam-kube-09-1   128.140.63.202    2a01:4f8:c012:10af::1 Olmo
+xam-kube-09-2   5.75.245.223      2a01:4f8:c012:5b21::1 Olmo
+xam-kube-09-3   49.13.19.16       2a01:4f8:c012:3b5a::1 Olmo
+
+xam-kube-10-1   162.55.163.4      2a01:4f8:c012:af5e::1 Joseph
+xam-kube-10-2   49.13.30.191      2a01:4f8:c012:46d9::1 Joseph
+xam-kube-10-3   49.13.31.190      2a01:4f8:c012:7a02::1 Joseph
+
+xam-kube-11-1   49.13.6.208       2a01:4f8:c17:9b0f::1  
+xam-kube-11-2   49.13.7.35        2a01:4f8:c012:ea0b::1 
+xam-kube-11-3   91.107.210.229    2a01:4f8:c012:76e::1  
+
+xam-kube-12-1   142.132.239.214   2a01:4f8:c012:538d::1 
+xam-kube-12-2   49.13.51.179      2a01:4f8:1c17:4283::1 
+xam-kube-12-3   49.12.101.57      2a01:4f8:c012:679a::1 
+
+xam-kube-13-1   49.13.28.126      2a01:4f8:c17:c7c9::1  Hannes
+xam-kube-13-2   91.107.206.95     2a01:4f8:c012:ba9c::1 Hannes
+xam-kube-13-3   5.75.230.70       2a01:4f8:c012:b24e::1 Hannes
+
+xam-kube-14-1   49.12.244.178     2a01:4f8:c17:29c8::1  
+xam-kube-14-2   49.13.7.116       2a01:4f8:c012:94dc::1 
+xam-kube-14-3   78.46.225.234     2a01:4f8:c012:cbf5::1 
+
+xam-kube-15-1   49.13.13.251      2a01:4f8:c012:3b9e::1 Daniel
+xam-kube-15-2   157.90.240.174    2a01:4f8:c010:a815::1 Daniel
+xam-kube-15-3   49.13.29.174      2a01:4f8:1c17:799e::1 Daniel
+
+xam-kube-16-1   49.13.29.122      2a01:4f8:c012:2ff3::1 Erik
+xam-kube-16-2   162.55.42.143     2a01:4f8:c17:acfa::1  Erik
+xam-kube-16-3   78.46.218.228     2a01:4f8:c012:a4::1   Erik
+
+xam-kube-17-1   116.202.29.154    2a01:4f8:c012:776e::1 Christian
+xam-kube-17-2   168.119.186.159   2a01:4f8:c012:ac7f::1 Christian
+xam-kube-17-3   142.132.186.101   2a01:4f8:c012:ca2::1  Christian
+
+xam-kube-18-1   128.140.93.169    2a01:4f8:c012:73e6::1 
+xam-kube-18-2   49.13.50.163      2a01:4f8:1c17:53f0::1 
+xam-kube-18-3   49.13.18.229      2a01:4f8:c012:fcde::1 
+
+
+
+
+## Kubernetes Architecture
+
+
+* Control Plane Nodes ("Master Nodes")
+++ Everything that is on a Worker Node
+** API-Server
+** etcd
+** controller manager
+** scheduler
+** [cloud control manager]
+
+* Worker Nodes ("Minions")
+** Container Runtime (containerd, CRI-O, Docker Shim->Docker->containerd)
+** kubelet
+** kube-proxy
+
+* Service
+** CoreDNS
+** Ingress Controller
+** PKI
+** Storage Provisioner
+** Metrics server
+** [Monitoring, Prometheus]
+** [Logging, ELK, EFK, Loki, greylog2]
+
+
+
+### EXERCISE: Setting up the work environment
+
+* Check whether or not you already have a file ~/.kube/config. If this file exist create a backup.
+* Open your backup in a text editor and make sure that is valid.
+* Check that you can SSH into all of your virtual training machines.
+* Copy the file /etc/kubernetes/admin.conf from the first machine to your local file ~/.kube/config .
+* Make sure you have kubectl installed.
+* The command `kubectl get nodes` on your local machine should now list your Kubernetes nodes.
+* Install a text editor / IDE. If unsure, use Visual Studio Code, but everything you can handle is fine.
+* If you use VS Code:
+  * Install the Kubernetes extensions.
+  * Open Settings, Extensions, Kubernetes, Edit in settings.json, add add these lines to the "vs-kubernetes" element
+  "disable-linters": [
+    "resource-limits"
+  ]
+* Create a directory `k8scourse` and open it in your IDE.
+
+https://plugins.jetbrains.com/plugin/10485-kubernetes
+
+Configure paths to kubectl and helm and check that the commands work:
+
+https://www.jetbrains.com/help/idea/kubernetes.html
+
+
+
+
+mkdir ~/.kube/
+scp root@142.132.227.117:~/.kube/config  ~/.kube/config
+
+
+
+## First Pod
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: website
+spec:
+  containers:
+    - name: webserver
+      image: httpd:latest
+
+kubectl apply -f website-pod.yml
+kubectl get pods
+kubectl get pods -w
+kubectl get pods -o wide
+kubectl describe pod/website
+
+
+### EXERCISE: Chasing down a Pod
+
+* Start a first Pod which runs a container with the image httpd:latest.
+* Find out, on which Node the Pod runs.
+* SSH to that Node. Use `docker ps` to find which container(s) run(s) related to your Pod
+* Use `docker inspect` to investigate the container's networking configuration. Does it look good?
+* Kill the webserver container using `docker kill`. What happens in Docker now? Is it reflected in `kubectl get`and `kubectl describe`?
+* If there are other containers related to the Pod, what happens if they are killed?
+
+
+
+docker run alpine:latest /bin/sh
+docker run -ti alpine:latest /bin/sh
+
+kubectl exec -ti website -c webserver -- /bin/sh
+kubectl logs website -c webserver -f
+
+
+### EXERCISE: Interactive Pods
+
+* Try to extend your current Pod with a second container running alpine:latest.
+* Existing Pods may not be updated, use `kubectl delete` to remove the Pod before recreating it.
+* If there are any issues with the Pod, try to figure out the reason using `kubectl describe`.
+* Think about potential `docker run` parameters that may be necessary to prevent the same situation when using Docker.
+* Use `kubectl explain` to find a similar option to use when defining containers in a Pod.
+* When both containers run, use `kubectl exec` to open a shell (/bin/sh) in the Alpine pod and use `wget` or `curl` to query the web server.
+
+apk add curl
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: website
+spec:
+  containers:
+    - name: webserver
+      image: httpd:latest
+    - name: shell1
+      image: alpine:latest
+      stdin: true
+      tty: true
+    - name: shell2
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do date; sleep 1; done
+
+kubectl exec -ti website -c shell1 -- /bin/sh
+# wget -O - -q localhost
+
+kubectl logs website -c shell2 -f
+
+kubectl delete pod/website --grace-period=0
+
+
+
+#### EXERCISE: Web-Clock in a single Pod
+
+* Create one Pod with three containers:
+  * clock:
+    Runs an infinite loop to write the current time to a file every second. The file should reside on an emptyDir volume within the Pod.
+  * timeserver:
+    Runs httpd:latest. The emptyDir volume with the time file should be mounted to /usr/local/apache2/htdocs/.
+  * client:
+    Runs an infitite loop that retrieves the time file from the webserver every second and prints it to standard out (e.g. using `curl -s` or `wget -O - -q`)
+* When the Pod runs, `kubectl logs` on the client should output the current time every second.
+
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8stime
+spec:
+  containers:
+    - name: webserver
+      image: httpd:latest
+      volumeMounts:
+        - name: htdocs
+          mountPath: /usr/local/apache2/htdocs
+    - name: clock
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do date > /mnt/date.txt; sleep 1; done
+      volumeMounts:
+        - name: htdocs
+          mountPath: /mnt
+    - name: client
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do wget -O - -q http://localhost/date.txt; sleep 1; done
+  volumes:
+    - name: htdocs
+      emptyDir: {}
+
+
+
+## PersistentVolumeClaims
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc3
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+
+#### EXERCISE: Web-Clock with a PVC
+
+* Continue working on the previous example.
+* Create a PVC to store the time data.
+* Create a new Pod that only contains the clock, but not the timeserver and the client. The Pod should mount the PVC instead of the emptyDir volume.
+* Remove the clock from the Pod of the previous exercise. Change the emptyDir volume to also mount the PVC.
+* To allow both Pods to access the volume, make sure they both run on the same node. Specify the name of one of the worker nodes in the Pod.spec.nodeName of the Pods.
+
+
+#### Solutions
+
+  clock-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clock
+spec:
+  nodeName: xam-kube-01-2
+  containers:
+    - name: clock
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do date > /mnt/date.txt; sleep 1; done
+      volumeMounts:
+        - name: htdocs
+          mountPath: /mnt
+  volumes:
+    - name: htdocs
+      persistentVolumeClaim:
+        claimName: timedata
+
+  k8stime-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: k8stime
+spec:
+  nodeName: xam-kube-01-2
+  containers:
+    - name: webserver
+      image: httpd:latest
+      volumeMounts:
+        - name: htdocs
+          mountPath: /usr/local/apache2/htdocs
+    - name: client
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do wget -O - -q http://localhost/date.txt; sleep 1; done
+  volumes:
+    - name: htdocs
+      persistentVolumeClaim:
+        claimName: timedata
+
+  timedata-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: timedata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  
+
+## Labels
+
+https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+
+kubectl get pods --show-labels -l foo=bar
+
+
+#### EXERCISE: Getting started with Labels
+
+Run the following set of pods:
+
+kubectl run web1 --restart=Never --image=httpd --labels app=aapp,component=c1,version=1.0
+kubectl run web2 --restart=Never --image=httpd --labels app=aapp,component=c1,version=1.0
+kubectl run web3 --restart=Never --image=httpd --labels app=aapp,component=c2,version=1.1
+kubectl run web4 --restart=Never --image=httpd --labels app=aapp,component=c3,version=1.0
+kubectl run web5 --restart=Never --image=httpd --labels app=bapp,component=c1,version=1.1
+kubectl run web6 --restart=Never --image=httpd --labels app=bapp,component=c2,version=1.0
+kubectl run web7 --restart=Never --image=httpd --labels app=bapp,component=c3,version=1.1
+kubectl run web8 --restart=Never --image=httpd --labels app=bapp,component=c4,version=1.1
+
+Try to create kubectl get commands that return these Pods:
+
+* All Pods with the version 1.1.
+kubectl get pods --show-labels -l "version=1.1"
+
+* All Pods with the component c1.
+kubectl get pods --show-labels -l "component=c1"
+
+* All Pods with either the component c1 or c2.
+kubectl get pods --show-labels -l "component in (c1,c2)"
+
+* All Pods which have a different component than c2, with that component being in version 1.1.version=1.1
+kubectl get pods --show-labels -l "component notin (c2),version=1.1"
+kubectl get pods --show-labels -l "component!=c2,version=1.1"
+
+* Use the command `kubectl label --overwrite` to change the labels of all Pods with a component c2 to version 1.2
+kubectl label pod --overwrite version=1.2 -l component=c2
+
+* Use the command `kubectl label --overwrite` to change the labels of all Pods with a component c3 or c4, both in version 1.1, to version 1.3
+kubectl label pod --overwrite version=1.3 -l "component in (c3,c4),version=1.1"
+
+Add --dry-run=client for a dry run.
+kubectl run web --image=httpd:latest --dry-run=client -o yaml
+
+
+## Services
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: aapp-c1
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    app: aapp
+    component: c1
+
+
+#### EXERCISE: Web-Clock with a Service
+
+* Continue working on the previous example.
+* Create a new Pod that only contains the timeserver. Add labels to the Pod to specifically search for this Pod.
+* Create a Service that selects the timeserver pod. Check that the Endpoints of the service match the Pod's IP address.
+* Remove the timeserver from the previous example's Pod so it only contains the client. Adjust the client command to query the Service instead of localhost.
+* Ensure all resources of this exercise have proper labels.
+* Run all resources
+
+
+
