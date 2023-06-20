@@ -3,7 +3,8 @@ kind: Pod
 metadata:
   name: clock
   labels:
-    app: clock
+    app: k8stime
+    component: clock
 spec:
   nodeName: xam-kube-17-2
   containers:
