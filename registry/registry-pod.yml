@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: docker-registry
+  labels:
+    app: registry
+    component: docker-registry
+spec:
+  nodeName: xam-kube-17-2
+  containers:
+    - name: timeserver
+      image: registry:latest
+      volumeMounts:
+        - name: repo-vol
+          mountPath: /var/lib/registry
+  volumes:
+    - name: repo-vol
+      persistentVolumeClaim:
+        claimName: docker-repo-pvc
