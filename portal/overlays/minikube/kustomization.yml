@@ -1,0 +1,9 @@
+bases:
+  - ../storage/
+  - ../storage/pv/
+
+configMapGenerator:
+  - name: backend-env
+    behavior: merge
+    literals:
+      - ALLOWED_HOSTS=localhost,portal

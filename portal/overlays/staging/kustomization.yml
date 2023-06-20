@@ -1,0 +1,51 @@
+bases:
+  - ../storage/
+  - ../storage/pv/
+
+secretGenerator:
+  - name: portal-config
+    behavior: replace
+    files:
+      - config.json=files/portal-config.json
+  - name: secret-backend-env
+    behavior: merge
+    env: files/secret-backend.env
+  - name: secret-db-env
+    behavior: merge
+    env: files/secret-db.env
+  - name: secret-db-connection-env
+    behavior: merge
+    env: files/secret-db-connection.env
+  - name: secret-tls-portal-staging-sis
+    type: "kubernetes.io/tls"
+    files:
+      - tls.crt=certs/cert_portal-staging.ethz.ch.crt
+      - tls.key=certs/portal-staging.ethz.ch.key
+
+configMapGenerator:
+  - name: backend-env
+    behavior: merge
+    literals:
+      - ADMIN_EMAIL=chucknorris@roundhouse.gov
+      - SERVICE_HOSTNAME=...
+      - ALLOWED_HOSTS=localhost,...
+      - LOGSTASH_HOST=...
+      - DEPLOYMENT_NAME=staging
+      - DEBUG=True
+  - name: frontend-env
+    behavior: merge
+    literals:
+      - NEXT_PUBLIC_IMAGES_DOMAINS=localhost,...
+
+patches:
+  # Replace ... with your hostname:
+  - patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: ...
+      - op: add
+        path: /spec/tls
+        value: [{"hosts": ["..."], "secretName": "secret-tls-portal-staging"}]
+    target:
+      kind: Ingress
+      name: ingress-portal

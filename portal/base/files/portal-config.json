@@ -1,0 +1,73 @@
+{
+  "notification": {
+    "ticket_mail": "<secret>",
+    "contact_form_recipient": "<secret>"
+  },
+  "oidc": {
+    "client_id": "<secret>",
+    "client_secret": "<secret>",
+    "config_url": "https://<secret>/auth/realms/example/.well-known/openid-configuration",
+    "login_redirect_url": "/",
+    "logout_redirect_url": "/"
+  },
+  "oauth": {
+    "issuer": "http://localhost:8000/auth/oauth",
+    "expiration_time_seconds": 3600,
+    "jwt_key": {
+      "public_path": "/app/jwt_tls/portal_jwt_public.pem",
+      "private_path": "/app/jwt_tls/portal_jwt_private.pem"
+    },
+    "alg": "RS256",
+    "sts": {
+      "duration_seconds": 3600
+    }
+  },
+  "user": {
+    "default_namespace": "ch",
+    "uid": {
+      "min": 1000000,
+      "max": 1499999
+    },
+    "gid": {
+      "min": 1000000,
+      "max": 1499999
+    },
+    "local_username": {
+      "min_length": 6,
+      "max_length": 64
+    }
+  },
+  "project": {
+    "gid": {
+      "min": 1500000,
+      "max": 1999999
+    }
+  },
+  "email": {
+    "host": "",
+    "port": 25,
+    "use_tls": true,
+    "user": "",
+    "password": "",
+    "from_address": "",
+    "subject_prefix": "BioMed-IT Portal: "
+  },
+  "pgp": {
+    "keyserver": "https://keys.openpgp.org/",
+    "end_relax": 1706745600
+  },
+  "session": {
+    "expire_at_browser_close": true,
+    "expire_seconds": 86400
+  },
+  "logging": {
+    "level": "DEBUG"
+  },
+  "switch": {
+    "auth_username": "",
+    "scim_api_affiliations_url": "",
+    "scim_api_username": "",
+    "scim_api_password": ""
+  },
+  "flags": { "authorized_user": "" }
+}

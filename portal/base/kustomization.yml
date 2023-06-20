@@ -1,0 +1,56 @@
+resources:
+  - deployment.yml
+  - service.yml
+  - ingress.yml
+
+configMapGenerator:
+  - name: db-init
+    files:
+      - files/init-db.sh
+  - name: nginx-conf
+    files:
+      - files/nginx.conf
+  - name: backend-env
+    literals:
+      - DEBUG=False
+      - ALLOWED_HOSTS=localhost,portal.dcc.sib.swiss
+      - SERVICE_HOSTNAME=portal.dcc.sib.swiss
+      - PROXY_FORWARD_PROTO=True
+      - ADMIN_EMAIL=admin@example.org
+      - DEPLOYMENT_NAME=production
+      - HTTP_LOG_ENDPOINT=data-prepper
+      - HTTP_LOG_ENDPOINT_PORT=2021
+      - OTEL_PYTHON_DJANGO_INSTRUMENT=False
+      - OTEL_SERVICE_NAME=portal.dev
+      - OTEL_BACKEND_ENDPOINT=opensearch:21890
+  - name: frontend-env
+    literals:
+      - NEXT_PUBLIC_CONTACT_EMAIL=<secret>
+      - NEXT_PUBLIC_CONTACT_NAME=Data Coordination Centre
+      - NEXT_PUBLIC_CONTACT_SHORT_NAME=DCC
+      - NEXT_PUBLIC_UNIQUE_VALIDATION_DEBOUNCE=750
+      - NEXT_USE_REDUX_DEV_TOOLS=true
+      - NEXT_PUBLIC_IMAGES_DOMAINS=localhost,portal.dcc.sib.swiss
+      - NEXT_PUBLIC_KEY_SERVER=https://keys.openpgp.org
+      - NEXT_PUBLIC_SETT_DOCUMENTATION=https://sett.readthedocs.io/
+      - NEXT_PUBLIC_NODES_INFO=https://www.biomedit.ch/home/biomed-it-infrastructure/biomedit-nodes.html
+      - NEXT_PUBLIC_HTTPS_DTR_ENABLED=false
+      - NEXT_PUBLIC_AFFILIATION_CONSENT_REQUIRED=true
+
+secretGenerator:
+  - name: portal-config
+    files:
+      - config.json=files/portal-config.json
+  - name: secret-backend-env
+    literals:
+      - SECRET_KEY=63n87zUHfUFtxLuDYgcYGg3uvktzLPq942dQs7rxbSaLfuQRCS
+  - name: secret-db-connection-env
+    literals:
+      - DB_NAME=dcc
+      - DB_USER=dcc
+      - DB_PASS=kwnqQX8YwGRkgoWR6R
+      - DB_HOST=db
+      - DB_PORT=5432
+  - name: secret-db-env
+    literals:
+      - POSTGRES_PASSWORD=J6yEp8XtZI8W7ERe7mXv

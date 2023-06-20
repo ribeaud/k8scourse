@@ -1,0 +1,207 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+        - name: portal-backend-db-init
+          image: registry.gitlab.com/biomedit/portal/web:5.3.1-dev.16
+          command:
+            ["bash", "-c", "python manage.py migrate && python user_init.py"]
+          volumeMounts:
+            - name: portal-config
+              mountPath: /usr/src/app/.config.json
+              subPath: config.json
+          envFrom:
+            - configMapRef:
+                name: backend-env
+            - secretRef:
+                name: secret-backend-env
+            - secretRef:
+                name: secret-db-connection-env
+      containers:
+        - name: portal-backend
+          image: registry.gitlab.com/biomedit/portal/web:5.3.1-dev.16
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: portal-config
+              mountPath: /usr/src/app/.config.json
+              subPath: config.json
+          envFrom:
+            - configMapRef:
+                name: backend-env
+            - secretRef:
+                name: secret-backend-env
+            - secretRef:
+                name: secret-db-connection-env
+      volumes:
+        - name: portal-config
+          secret:
+            secretName: portal-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+        - name: portal-frontend
+          image: registry.gitlab.com/biomedit/portal/frontend:5.3.1-dev.16
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: frontend-env
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: portal-db
+          image: postgres:13
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: db-data
+              mountPath: /var/lib/postgresql/data
+            - name: db-init
+              mountPath: /docker-entrypoint-initdb.d/00-init-db.sh
+              subPath: init-db.sh
+          envFrom:
+            - secretRef:
+                name: secret-db-env
+            - secretRef:
+                name: secret-db-connection-env
+      volumes:
+        - name: db-init
+          configMap:
+            name: db-init
+        - name: db-data
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      initContainers:
+        - name: init-command
+          image: registry.gitlab.com/biomedit/portal/web:5.3.1-dev.16
+          command:
+            [
+              "sh",
+              "-c",
+              "find /app/public -mindepth 1 -maxdepth 1 -exec rm -rf -- {} + && cp -r /usr/src/app/public /app",
+            ]
+          volumeMounts:
+            - name: portal-public
+              mountPath: /app/public
+      containers:
+        - name: portal-nginx
+          image: nginx:1.19.4-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: portal-public
+              mountPath: /app/public
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: nginx.conf
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+        - name: portal-public
+          emptyDir: {}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portal-celery
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery
+  template:
+    metadata:
+      labels:
+        app: celery
+    spec:
+      containers:
+        - name: portal-celery
+          image: registry.gitlab.com/biomedit/portal/web:5.3.1-dev.16
+          command: ["celery", "-A", "portal", "worker", "-l", "info"]
+          volumeMounts:
+            - name: portal-config
+              mountPath: /usr/src/app/.config.json
+              subPath: config.json
+          envFrom:
+            - configMapRef:
+                name: backend-env
+            - secretRef:
+                name: secret-backend-env
+            - secretRef:
+                name: secret-db-connection-env
+        - name: portal-celery-beat
+          image: registry.gitlab.com/biomedit/portal/web:5.3.1-dev.16
+          command: ["celery", "-A", "portal", "beat", "-l", "info"]
+          volumeMounts:
+            - name: portal-config
+              mountPath: /usr/src/app/.config.json
+              subPath: config.json
+          envFrom:
+            - configMapRef:
+                name: backend-env
+            - secretRef:
+                name: secret-backend-env
+            - secretRef:
+                name: secret-db-connection-env
+        - name: portal-redis
+          image: docker.io/library/redis:6-alpine
+          ports:
+            - containerPort: 6379
+
+      volumes:
+        - name: portal-config
+          secret:
+            secretName: portal-config
