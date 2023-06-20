@@ -13,6 +13,18 @@ spec:
       volumeMounts:
         - name: htdocs
           mountPath: /usr/local/apache2/htdocs
+      readinessProbe:
+        httpGet:
+          port: 80
+          path: /ready.txt
+      livenessProbe:
+        httpGet:
+          port: 80
+          path: /alive.txt
+      startupProbe:
+        httpGet:
+          port: 80
+          path: /started.txt
   volumes:
     - name: htdocs
       persistentVolumeClaim:
