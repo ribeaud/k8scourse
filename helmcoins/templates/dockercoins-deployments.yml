@@ -1,0 +1,124 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui
+  labels:
+    app: dockercoins
+    component: webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: webui
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: webui
+    spec:
+      containers:
+        - name: webui
+          image: 10.105.171.61:5000/webui:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hasher
+  labels:
+    app: dockercoins
+    component: hasher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: hasher
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: hasher
+    spec:
+      containers:
+        - name: hasher
+          image: 10.105.171.61:5000/hasher:latest
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: rng
+  labels:
+    app: dockercoins
+    component: rng
+spec:
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: rng
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: rng
+    spec:
+      containers:
+        - name: rng
+          image: 10.105.171.61:5000/rng:latest
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: dockercoins
+    component: worker
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: 10.105.171.61:5000/worker:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: dockercoins
+    component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis

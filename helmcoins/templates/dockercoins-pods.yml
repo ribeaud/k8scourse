@@ -1,0 +1,67 @@
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: worker
+  labels:
+    app: dockercoins
+    component: worker
+spec:
+  containers:
+    - name: worker
+      image: 10.105.171.61:5000/worker:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hasher
+  labels:
+    app: dockercoins
+    component: hasher
+spec:
+  containers:
+    - name: hasher
+      image: 10.105.171.61:5000/hasher:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webui
+  labels:
+    app: dockercoins
+    component: webui
+spec:
+  containers:
+    - name: webui
+      image: 10.105.171.61:5000/webui:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rng
+  labels:
+    app: dockercoins
+    component: rng
+spec:
+  containers:
+    - name: rng
+      image: 10.105.171.61:5000/rng:latest
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  labels:
+    app: dockercoins
+    component: redis
+spec:
+  containers:
+    - name: redis
+      image: redis:latest
+      volumeMounts:
+        - name: redis-data
+          mountPath: /data
+  volumes:
+    - name: redis-data
+      persistentVolumeClaim:
+        claimName: redis
