@@ -1,0 +1,122 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui
+  labels:
+    app: dockercoins
+    component: webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: webui
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: webui
+    spec:
+      containers:
+        - name: webui
+          image: 10.109.7.190:5000/webui:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hasher
+  labels:
+    app: dockercoins
+    component: hasher
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: hasher
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: hasher
+    spec:
+      containers:
+        - name: hasher
+          image: 10.109.7.190:5000/hasher:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rng
+  labels:
+    app: dockercoins
+    component: rng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: rng
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: rng
+    spec:
+      containers:
+        - name: rng
+          image: 10.109.7.190:5000/rng:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  labels:
+    app: dockercoins
+    component: worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: worker
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: worker
+    spec:
+      containers:
+        - name: worker
+          image: 10.109.7.190:5000/worker:latest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  labels:
+    app: dockercoins
+    component: redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dockercoins
+      component: redis
+  template:
+    metadata:
+      labels:
+        app: dockercoins
+        component: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:latest
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+      volumes:
+        - name: redis-data
+          persistentVolumeClaim:
+            claimName: redis
