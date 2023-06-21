@@ -9,7 +9,7 @@ metadata:
 spec:
   containers:
     - name: worker
-      image: 10.109.7.190:5000/worker:latest
+      image: 10.105.171.61:5000/worker:latest
 ---
 apiVersion: v1
 kind: Pod
@@ -21,7 +21,7 @@ metadata:
 spec:
   containers:
     - name: hasher
-      image: 10.109.7.190:5000/hasher:latest
+      image: 10.105.171.61:5000/hasher:latest
 ---
 apiVersion: v1
 kind: Pod
@@ -33,7 +33,7 @@ metadata:
 spec:
   containers:
     - name: webui
-      image: 10.109.7.190:5000/webui:latest
+      image: 10.105.171.61:5000/webui:latest
 ---
 apiVersion: v1
 kind: Pod
@@ -45,7 +45,7 @@ metadata:
 spec:
   containers:
     - name: rng
-      image: 10.109.7.190:5000/rng:latest
+      image: 10.105.171.61:5000/rng:latest
 ---
 apiVersion: v1
 kind: Pod
