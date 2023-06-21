@@ -6,10 +6,14 @@ June 19th to June 21st, 2023 -- Karakun AG
 
 ## Backlog
 
-* If we have some time: Cluster setup
+- If we have some time: Cluster setup
 * Local development environments (Minikube? Karakun Dev Environments)
+	Minikube
+	https://k3s.io/ (only run on linux)
 
-* how to manage self-made images regarding security update (Erik)
++ how to manage self-made images regarding security update (Erik)
+
++ Resource Limits / Quota (just a few questions) - Michael
 
 ## Resources
 
@@ -438,6 +442,844 @@ spec:
 * Remove the timeserver from the previous example's Pod so it only contains the client. Adjust the client command to query the Service instead of localhost.
 * Ensure all resources of this exercise have proper labels.
 * Run all resources
+
+
+client-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client
+  labels:
+    apps: k8stime
+    component: client
+spec:
+  containers:
+    - name: client
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do wget -O - -q http://timeserver/date.txt; sleep 1; done
+
+clock-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: clock
+  labels:
+    apps: k8stime
+    component: clock
+spec:
+  nodeName: xam-kube-01-3
+  containers:
+    - name: clock
+      image: alpine:latest
+      command:
+        - /bin/sh
+        - -c
+      args:
+        - while true; do date > /mnt/date.txt; sleep 1; done
+      volumeMounts:
+        - name: htdocs
+          mountPath: /mnt
+  volumes:
+    - name: htdocs
+      persistentVolumeClaim:
+        claimName: timedata
+
+timedata-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: timedata
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  
+timeserver-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: timeserver
+  labels:
+    apps: k8stime
+    component: timeserver
+spec:
+  nodeName: xam-kube-01-3
+  containers:
+    - name: webserver
+      image: httpd:latest
+      volumeMounts:
+        - name: htdocs
+          mountPath: /usr/local/apache2/htdocs
+  volumes:
+    - name: htdocs
+      persistentVolumeClaim:
+        claimName: timedata
+
+timeserver-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: timeserver
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: 80
+  selector:
+    apps: k8stime
+    component: timeserver
+
+
+Access some port within kubernetes locally:
+   kubectl port-forward svc/timeserver 8080:80
+
+
+
+## Probes
+
+In Pod.spec.containers:
+      readinessProbe:
+        httpGet:
+          port: 80
+          path: /ready.txt
+
+#### EXERCISE: Web-clock with Probes
+
+* Add readinessProbe to the timeserver. The probe should be an httpGet probe to `/ready.txt`.
+* Is the probe successful? Can this be seen in `kubectl get` and `kubectl describe`?
+* Is the Pod included as an Endpoint in the Service? (`kubectl get ep`)
+* Use kubectl exec to enter the timeserver Pod and create the file `/usr/local/apache2/htdocs/ready.txt`.
+  kubectl exec -ti pod/timeserver -- /bin/bash
+* What happens when the probe becomes true? Is it included in the Service Endpoints?
+
+* Add a livenessProbe to the timeserver. The probe should be an httpGet probe to `/alive.txt`.
+* What happens if the livenessProbe fails?
+* Make sure the Pod passes the livenessProbe.
+
+* Keep the logs of the timeserver open to monitor what files the kubelet requests (kubectl logs <pod-name> -c <container-name> -f).
+
+* Add a startupProbe to the timeserver. The probe should be an httpGet probe to `/started.txt`.
+* What happens if the startupProbe fails?
+* What happens if the startupProbe becomes successful?
+
+
+1. Dockerfile
+2. Build the Dockerfile -> Image
+3. Push the image to a registry
+4. Reference the image in a Pod
+
+
+
+Docker image registry:latest
+
+PVC: 2Gi
+Pod: Image: registry:latest, must mount PVC at /var/lib/registry/
+SVC: Port: 5000
+
+root@xam-kube-17-1:~# cat /etc/docker/daemon.json 
+{
+  "exec-opts": ["native.cgroupdriver=systemd"],
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "100m"
+  },
+  "storage-driver": "overlay2",
+  "insecure-registries" : [ "10.96.0.0/12", "127.0.0.0/8" ]
+}
+
+#### EXERCISE: Registry Setup
+
+* Add a simple container registry to your Kubernetes.
+* The registry should be provided by the image registry:latest.
+* Find out which port the registry uses and under which path it stores image data.
+* Define which Kubernetes resources are required to run the registry in a way that the container can be restarted without loosing image data and while keeping the registry accessible through a consistent IP address.
+* Create the required Kubernetes resources.
+On one of the k8s nodes:
+* To see if the the registry runs, run `curl http://ip:port/v2/_catalog` on any of the Kubernetes Nodes. Adjust ip and port according to your setup. The result should be an empty `repositories` array.
+* To test the registry, download an existing image using `docker pull alpine:latest`, add an additional tag to the image using `docker tag alpine:latest ip:port/alpine:latest` and upload the image to your registry using `docker push ip:port/alpine:latest`. Now the registry catalog should include alpine.
+
+
+
+#### registry-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: registry
+  labels:
+    apps: registry
+    component: registry
+spec:
+  containers:
+    - name: registry
+      image: registry:latest
+      volumeMounts:
+        - name: registry
+          mountPath: /var/lib/registry/
+  volumes:
+    - name: registry
+      persistentVolumeClaim:
+        claimName: registry
+
+
+#### registry-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: registry
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+
+#### svc-registry.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: registry
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5000
+      protocol: TCP
+      targetPort: 5000
+  selector:
+    apps: registry
+    component: registry
+
+
+#### EXERCISE: Dockercoins
+
+* Clone the container.training git repository on one of your nodes:
+     git clone https://github.com/jpetazzo/container.training
+* Within the directory container.training/dockercoins, build the images for rng, hasher, worker and webui. Push the images to your registry.
+* Ensure that there is a container for rng, hasher, worker, webui and redis running.
+* The redis container should have a persistent volume mounted to /data
+* Create services for rng, hasher, redis and webui. Except for redis, all services run on Port 80. Redis runs on Port 6379.
+* Open the webui in your browser and make sure you see some coin mining.
+
+docker build -t ip:port/rng:latest rng/
+docker push ip:port/rng:latest
+
+docker build -t rng:latest rng/
+docker tag rng:latest ip:port/rng:latest
+docker push ip:port/rng:latest
+
+To externally access `webui`, you have to use `NodePort` in the `webui` service. By combining the IP address of one of the cluster nodes, and the port number listed in `kubectl get service/webui` you are able to access `webui` in the browser. Alternatively one could use `kubectl port-forward`.
+
+To access a service from outside (browser)
+	* Create the service with type ‘NodePort’
+	* Get the port of the service using ‘kubectl get svc’
+	* Get the IP address of the node where POD is running using ‘kubectl get nodes -o wide’. Take IP address from the INTERNAL-IP column.
+
+
+
+
+for i in hasher rng webui worker
+do
+ docker build -t 10.97.235.125:5000/$i:latest $i
+ docker push 10.97.235.125:5000/$i:latest
+done
+
+ for i in worker hasher webui redis
+> do
+> cp rng-pod.yml $i-pod.yml
+> cp rng-svc.yml $i-svc.yml
+> sed -i -e "s/rng/$i/" $i-pod.yml $i-svc.yml
+> done
+
+
+
+
+hasher-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hasher
+  labels:
+    apps: k8scoins
+    component: hasher
+spec:
+  containers:
+    - name: hasher
+      image: 10.97.235.125:5000/hasher:latest
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+
+hasher-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hasher
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+  selector:
+    apps: k8scoins
+    component: hasher
+
+redis-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: redis
+  labels:
+    apps: k8scoins
+    component: redis
+spec:
+  containers:
+    - name: redis
+      image: redis:latest
+      ports:
+        - name: redis
+          protocol: TCP
+          containerPort: 6379
+      volumeMounts:
+        - name: redis
+          mountPath: /data
+  volumes:
+    - name: redis
+      persistentVolumeClaim:
+        claimName: redis
+
+redis-pvc.yml
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+redis-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      protocol: TCP
+      targetPort: redis
+  selector:
+    apps: k8scoins
+    component: redis
+
+rng-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rng
+  labels:
+    apps: k8scoins
+    component: rng
+spec:
+  containers:
+    - name: rng
+      image: 10.97.235.125:5000/rng:latest
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+
+rng-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: rng
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+  selector:
+    apps: k8scoins
+    component: rng
+
+webui-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: webui
+  labels:
+    apps: k8scoins
+    component: webui
+spec:
+  containers:
+    - name: webui
+      image: 10.97.235.125:5000/webui:latest
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+
+webui-svc.yml
+apiVersion: v1
+kind: Service
+metadata:
+  name: webui
+spec:
+  type: NodePort
+  ports:
+    - port: 80
+      protocol: TCP
+      targetPort: http
+      nodePort: 31234
+  selector:
+    apps: k8scoins
+    component: webui
+
+worker-pod.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: worker
+  labels:
+    apps: k8scoins
+    component: worker
+spec:
+  containers:
+    - name: worker
+      image: 10.97.235.125:5000/worker:latest
+      ports:
+        - name: http
+          protocol: TCP
+          containerPort: 80
+
+## Deployment
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webui
+  labels:
+    apps: k8scoins
+    component: webui
+  annotations:
+    kubernetes.io/change-cause: "Update to summer edition"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      apps: k8scoins
+      component: webui
+  template:
+    metadata:
+      labels:
+        apps: k8scoins
+        component: webui
+    spec:
+      containers:
+        - name: webui
+          image: 10.97.235.125:5000/webui:latest
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 80
+
+#### EXERCISE: Dockercoins with Deployments
+
+* Turn all five Pods into Deployments
+* Delete the currently running, manually started Pods
+* Run the Deployments and confirm that Deployments, ReplicaSets and Pods exist as expected
+
+
+watch -n 1 kubectl get deploy,rs,pods (use Homebrew for macosx)
+
+
+#### EXERCISE: Scaling and Rolling Updates
+
+* Scale the webui to 10. Do this by editing the yaml file and applying it.
+* Wait for all 10 Pods to be running and ready.
+* Open `watch -n 1 kubectl get deploy,rs,pod` in a terminal and keep it running all the time
+* Add a readiness probe (httpGet to /ready.txt) to the webui Deployment template. Don't change anything else.
+* Apply the updated yaml file.
+* Observe what happens. Wait till no more changes happen.
+* Make one of the new Pods ready (kubectl exec ... -- touch /files/ready.txt). What happens now?
+
+
+## DaemonSet
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: rng
+  labels:
+    apps: k8scoins
+    component: rng
+  annotations:
+    kubernetes.io/change-cause: "Update to summer edition"
+spec:
+  selector:
+    matchLabels:
+      apps: k8scoins
+      component: rng
+  template:
+    metadata:
+      labels:
+        apps: k8scoins
+        component: rng
+    spec:
+      containers:
+        - name: rng
+          image: 10.97.235.125:5000/rng:latest
+          ports:
+            - name: http
+              protocol: TCP
+              containerPort: 80
+
+
+#### EXERCISE: DaemonSet for RNG
+
+* Turn your rng into a daemonset.
+* Delete the rng Deployment.
+* Keep `watch -n 1 kubectl get ds,pods` running all the time.
+* Apply the DaemonSet
+* How many pods are created and what nodes do they run on?
+
+* Add this to the DaemonSet at spec.template.spec:
+      nodeSelector:
+        training: run-ds
+* Apply the configuration.
+* How many Pods run now? What can be done to change this?
+
+* remove the nodeSelector from the DaemonSet and instead add this to pec.template.spec:
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          effect: NoSchedule
+* Apply the configuration.
+* How many Pods run now? Can you explain the observed behavior, i.e. when reviewing the output of `kubectl describe` for the various Nodes?
+
+## StatefulSet
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: training-stateful-web
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - port: 80
+  selector:
+    app: training
+    component: stateful-web
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: training-stateful-web
+  labels:
+    app: training
+    component: stateful-web
+spec:
+  replicas: 3
+  serviceName: training-stateful-web
+  selector:
+    matchLabels:
+      app: training
+      component: stateful-web
+  template:
+    metadata:
+      labels:
+        app: training
+        component: stateful-web
+    spec:
+      containers:
+        - name: webserver
+          image: nginx
+          ports:
+            - containerPort: 80
+              name: web
+          readinessProbe:
+            httpGet:
+              path: /ready.txt
+              port: 80
+          volumeMounts:
+            - name: htdocs
+              mountPath: /usr/share/nginx/html
+  volumeClaimTemplates:
+    - metadata:
+        name: htdocs
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+
+
+## Job
+
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: training-count-once
+spec:
+  template:
+    spec:
+      containers:
+        - name: training
+          image: alpine:latest
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "for i in $(seq 10); do echo $(date): $i; sleep 1; done"
+      restartPolicy: Never
+
+## CronJob
+
+
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: training-count-every-five-minutes
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: training
+              image: alpine:latest
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "for i in $(seq 10); do echo $(date): $i; sleep 1; done"
+          restartPolicy: OnFailure
+
+
+## Ingress
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rng
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: rng.49.12.242.155.nip.io
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+	              service:
+                name: rng
+                port:
+                  number: 80
+
+kubectl get nodes -o wide
+-> Get Node ip -> a.b.c.d
+Create a hostname like this: rng.a.b.c.d.nip.io
+
+* Create an Ingress for the webui and test it
+* Create a second Ingress for the rng
+
+
+
+#### EXERCISE: Resource Consumption
+
+* Run a Pod on Kubernets. Identify the Node the Pod runs on and SSH into the node. Open `top` and keep it open.
+* Exec into the Pod and install stress / stress-ng in the Pod.
+* Run `stress -c 4` or `stress-ng -c 4` and see how many resource the Pod can consume.
+
+Alpine: apk add stress-ng
+Ubuntu: apt-get update && apt-get install -y stress
+
+kubectl run stress --image alpine:latest
+kubectl run stress2 --image=alpine:latest -ti  
+
+kubectl exec stress -ti -- apk add stress-ng
+kubectl exec stress -ti -- stress-ng -c 4
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stress
+spec:
+  containers:
+    - name: stress
+      image: 10.97.235.125:5000/alpine:latest
+      tty: true
+      stdin: true
+      resources:
+        requests:
+          cpu: 100m
+          memory: 64Mi
+        limits:
+          cpu: 500m
+          memory: 128Mi
+
+
+kubectl create ns client1time
+kubectl apply -f k8stime -n client1time
+
+
+
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: training-namespace-low-limits
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 100m
+        memory: 64Mi
+      default:
+        cpu: 200m
+        memory: 128Mi
+      min:
+        cpu: 100m
+        memory: 16Mi
+      max:
+        cpu: 250m
+        memory: 256Mi
+    - type: Pod
+      min:
+        cpu: 100m
+        memory: 16Mi
+      max:
+        cpu: "0.5"
+        memory: 512Mi
+
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: training-namespace-small-quota
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    count/pods: "4"
+    count/persistentvolumeclaims: "2"
+    count/services: "2"
+    count/services.nodeports: "1"
+
+## Helm
+
+helm create helmcoins
+cd helmcoins
+echo > values.yaml
+rm -r templates/*
+
+cp ../k8scoins/* templates/
+rm template/ing-*
+cd ..
+helm package helmcoins
+
+kubectl create ns helmcoins
+helm install -n helmcoins fabiancoins ./helmcoins-0.1.1.tgz
+helm upgrade -n helmcoins fabiancoins ./helmcoins-0.1.1.tgz
+helm list -n helmcoins
+
+
+values.yaml:
+ingress:
+  domain: 49.12.242.155.nip.io
+
+In the template:
+        - host: webui.{{ .Values.ingress.domain }}
+
+Install:
+    helm upgrade -n helmcoins fabiancoins ./helmcoins-0.1.4.tgz --set ingress.domain=helmcoins.49.12.242.155.nip.io
+
+Alternatively:
+client5-values.yml
+ingress:
+  domain: client5.49.12.242.155.nip.io
+helm install -n client5 client5-install ./helmcoins-0.1.4.tgz -f client5-values.yml
+
+{{- if .Values.ingress.enabled -}}
+{{- end }}
+
+
+* Add the Ingress to the chart
+* Configure the hostname from a values variable
+* Make the ingress optional
+* Install, just by having specific values files:
+    client1coins: Ingress with client1 in domain name
+    client2coins: Ingress with client2 in domain name
+    client3coins: Ingress without an ingress
+
+https://helm.sh/docs/chart_template_guide/builtin_objects/
+
+helm install --create-namespace -n foo ....
+
+
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: HelmRepository
+metadata:
+  name: apps
+spec:
+  url: https://<host>/<org>/charts
+  interval: 1m
+
+
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: app
+spec:
+  chart:
+    spec:
+      chart: app # name oder pfad
+      version: "4.0.x" # kann auch ein range sein >=4.0.0 <5.0.0) , funktioniert nur für HelmRepository
+      sourceRef:
+        kind: HelmRepository # oder GitRepository oder Bucket
+        name: apps
+#       namespace: ...
+#     interval: 1m
+  values:
+    replicas: 2
+  valuesFrom: # werden im Zweifelsfall von values überschrieben!
+    - kind: ConfigMap
+      name: bla
+      valuesKey: dbname
+#      targetPath: db.conf.name
+
+
+
+## Thank you so much for your course participation!
+
+Feel free to connect:
+
+ - https://www.linkedin.com/in/fthorns/
+ - https://www.xing.com/profile/Fabian_Thorns/
+
+ - https://www.linkedin.com/company/xamira-networks-gmbh/
+ - https://www.xing.com/pages/xamira-networks-gmbh
+
+We would be happy if you give us feedback (please click through all pages, even if you don't enter any information there -- only if you submit the questionnaire at the end, the entries will be saved):
+
+  https://forms.gle/gwff43qVexpzqCcC7
+
+You can find more information about our course program at www.xamira.de. We would be happy to welcome you again in one of our trainings!
+
+
 
 
 
